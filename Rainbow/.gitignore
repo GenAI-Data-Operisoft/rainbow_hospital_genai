@@ -1,0 +1,52 @@
+
+# General
+
+.DS_Store
+Thumbs.db
+
+
+# Environment files (secrets)
+
+.env
+.env.*
+!.env.example
+
+
+# Python (Backend)
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# Virtual environments
+venv/
+venvpython3/
+.env/
+.venv/
+
+# Test & temp outputs
+tmp_outputs/
+diarization_output/
+uploads/
+output.wav
+
+
+node_modules/
+.next/
+out/
+dist/
+
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+.vscode/
+.idea/
+
+
+.DS_Store
+Thumbs.db

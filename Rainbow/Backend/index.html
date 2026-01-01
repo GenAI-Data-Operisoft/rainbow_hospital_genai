@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Transcription Test Client</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .header h1 {
+      color: #4a5568;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+
+    .header p {
+      color: #718096;
+      font-size: 1.1rem;
+    }
+
+    .controls {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .control-section {
+      margin-bottom: 25px;
+    }
+
+    .control-section h3 {
+      color: #4a5568;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.9rem;
+    }
+
+    input,
+    select {
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 120px;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .button.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .button.danger {
+      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+      color: white;
+    }
+
+    .button.danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 101, 101, 0.3);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .status {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected {
+      background: #48bb78;
+    }
+
+    .status-dot.disconnected {
+      background: #f56565;
+    }
+
+    .status-dot.recording {
+      background: #ed8936;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .transcript-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .transcript-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .transcript-content {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 2px solid #e2e8f0;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+    }
+
+    .transcript-entry {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      background: white;
+      border-left: 4px solid #667eea;
+    }
+
+    .transcript-meta {
+      font-size: 0.8rem;
+      color: #718096;
+      margin-bottom: 5px;
+    }
+
+    .transcript-text {
+      color: #2d3748;
+      font-weight: 500;
+    }
+
+    .logs {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .logs-content {
+      background: #1a202c;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+      white-space: pre-wrap;
+    }
+
+    .log-entry.error {
+      color: #feb2b2;
+    }
+
+    .log-entry.success {
+      color: #9ae6b4;
+    }
+
+    .log-entry.info {
+      color: #90cdf4;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+
+    @media (max-width: 768px) {
+      .control-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎤 Real-Time Transcription Test Client</h1>
+      <p>Test your WebSocket-based transcription service with real audio streaming</p>
+    </div>
+
+    <div class="controls">
+      <div class="control-section">
+        <h3>🔧 Connection Settings</h3>
+        <div class="control-row">
+          <div class="control-group">
+            <label for="wsUrl">WebSocket URL:</label>
+            <input type="text" id="wsUrl" value="ws://localhost:8765" placeholder="ws://localhost:8765">
+          </div>
+          <button id="connectBtn" class="button primary">Connect</button>
+          <button id="disconnectBtn" class="button danger" disabled>Disconnect</button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3>🌍 Session Configuration</h3>
+        <div class="control-row">
+          <div class="control-group">
+            <label for="preferredLang">Preferred Language:</label>
+            <select id="preferredLang">
+              <option value="">Auto-detect</option>
+              <option value="en-IN">English (India)</option>
+              <option value="hi-IN">Hindi</option>
+              <option value="te-IN">Telugu</option>
+              <option value="ta-IN">Tamil</option>
+              <option value="kn-IN">Kannada</option>
+              <option value="ml-IN">Malayalam</option>
+              <option value="bn-IN">Bengali</option>
+              <option value="gu-IN">Gujarati</option>
+              <option value="mr-IN">Marathi</option>
+              <option value="pa-IN">Punjabi</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="processingMode">Processing Mode:</label>
+            <select id="processingMode">
+              <option value="transcribe">Transcribe Only</option>
+              <option value="translate">Translate</option>
+            </select>
+          </div>
+
+          <div class="control-group checkbox-group">
+            <input type="checkbox" id="codeSwitching">
+            <label for="codeSwitching">Code Switching Mode</label>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label for="doctorLangs">Doctor Known Languages (comma-separated):</label>
+            <input type="text" id="doctorLangs" placeholder="en-IN,hi-IN,te-IN">
+          </div>
+
+          <div class="control-group">
+            <label for="doctorProfile">Doctor Profile:</label>
+            <input type="text" id="doctorProfile" placeholder="General Practitioner">
+          </div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3>🎙️ Audio Controls</h3>
+        <div class="control-row">
+          <button id="startSessionBtn" class="button primary" disabled>Start Session</button>
+          <button id="startRecordingBtn" class="button primary" disabled>Start Recording</button>
+          <button id="stopRecordingBtn" class="button danger" disabled>Stop Recording</button>
+          <button id="endSessionBtn" class="button danger" disabled>End Session</button>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label for="aiModel">AI Model for Summary:</label>
+            <select id="aiModel">
+              <option value="claude-3-haiku">Claude 3 Haiku</option>
+              <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status">
+      <div class="status-indicator">
+        <div id="statusDot" class="status-dot disconnected"></div>
+        <strong id="statusText">Disconnected</strong>
+      </div>
+      <div id="sessionInfo"></div>
+    </div>
+
+    <div class="transcript-container">
+      <div class="transcript-header">
+        <h3>📝 Real-Time Transcript</h3>
+        <button id="clearTranscript" class="button" style="background: #e2e8f0; color: #4a5568;">Clear</button>
+      </div>
+      <div id="transcript" class="transcript-content">
+        <div style="text-align: center; color: #a0aec0; margin-top: 80px;">
+          Start recording to see transcriptions appear here...
+        </div>
+      </div>
+    </div>
+
+    <div class="logs">
+      <div class="transcript-header">
+        <h3>📊 System Logs</h3>
+        <button id="clearLogs" class="button" style="background: #e2e8f0; color: #4a5568;">Clear</button>
+      </div>
+      <div id="logs" class="logs-content">
+        <div class="log-entry info">System ready. Click Connect to start...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class TranscriptionTestClient {
+      constructor() {
+        this.ws = null;
+        this.isConnected = false;
+        this.sessionId = null;
+        this.mediaRecorder = null;
+        this.audioStream = null;
+        this.isRecording = false;
+        this.audioChunks = [];
+
+        this.initializeElements();
+        this.attachEventListeners();
+        this.updateUI();
+      }
+
+      initializeElements() {
+        // Connection elements
+        this.wsUrlInput = document.getElementById('wsUrl');
+        this.connectBtn = document.getElementById('connectBtn');
+        this.disconnectBtn = document.getElementById('disconnectBtn');
+
+        // Configuration elements
+        this.preferredLangSelect = document.getElementById('preferredLang');
+        this.processingModeSelect = document.getElementById('processingMode');
+        this.codeSwitchingCheck = document.getElementById('codeSwitching');
+        this.doctorLangsInput = document.getElementById('doctorLangs');
+        this.doctorProfileInput = document.getElementById('doctorProfile');
+        this.aiModelSelect = document.getElementById('aiModel');
+
+        // Control elements
+        this.startSessionBtn = document.getElementById('startSessionBtn');
+        this.startRecordingBtn = document.getElementById('startRecordingBtn');
+        this.stopRecordingBtn = document.getElementById('stopRecordingBtn');
+        this.endSessionBtn = document.getElementById('endSessionBtn');
+
+        // Display elements
+        this.statusDot = document.getElementById('statusDot');
+        this.statusText = document.getElementById('statusText');
+        this.sessionInfo = document.getElementById('sessionInfo');
+        this.transcript = document.getElementById('transcript');
+        this.logs = document.getElementById('logs');
+
+        // Clear buttons
+        this.clearTranscriptBtn = document.getElementById('clearTranscript');
+        this.clearLogsBtn = document.getElementById('clearLogs');
+      }
+
+      attachEventListeners() {
+        this.connectBtn.addEventListener('click', () => this.connect());
+        this.disconnectBtn.addEventListener('click', () => this.disconnect());
+        this.startSessionBtn.addEventListener('click', () => this.startSession());
+        this.startRecordingBtn.addEventListener('click', () => this.startRecording());
+        this.stopRecordingBtn.addEventListener('click', () => this.stopRecording());
+        this.endSessionBtn.addEventListener('click', () => this.endSession());
+        this.clearTranscriptBtn.addEventListener('click', () => this.clearTranscript());
+        this.clearLogsBtn.addEventListener('click', () => this.clearLogs());
+      }
+
+      connect() {
+        const url = this.wsUrlInput.value.trim();
+        if (!url) {
+          this.log('Please enter a WebSocket URL', 'error');
+          return;
+        }
+
+        try {
+          this.ws = new WebSocket(url);
+
+          this.ws.onopen = () => {
+            this.isConnected = true;
+            this.log('✅ Connected to WebSocket server', 'success');
+            this.updateStatus('connected', 'Connected');
+            this.updateUI();
+          };
+
+          this.ws.onclose = () => {
+            this.isConnected = false;
+            this.sessionId = null;
+            this.log('🔌 WebSocket connection closed', 'info');
+            this.updateStatus('disconnected', 'Disconnected');
+            this.updateUI();
+          };
+
+          this.ws.onerror = (error) => {
+            this.log(`❌ WebSocket error: ${error.message || 'Unknown error'}`, 'error');
+          };
+
+          this.ws.onmessage = (event) => {
+            this.handleMessage(JSON.parse(event.data));
+          };
+
+        } catch (error) {
+          this.log(`❌ Failed to connect: ${error.message}`, 'error');
+        }
+      }
+
+      disconnect() {
+        if (this.ws) {
+          this.ws.close();
+          this.ws = null;
+        }
+        if (this.audioStream) {
+          this.audioStream.getTracks().forEach(track => track.stop());
+          this.audioStream = null;
+        }
+        this.isConnected = false;
+        this.sessionId = null;
+        this.isRecording = false;
+        this.updateUI();
+      }
+
+      async startSession() {
+        if (!this.isConnected) {
+          this.log('❌ Not connected to server', 'error');
+          return;
+        }
+
+        const doctorLangs = this.doctorLangsInput.value.trim();
+        const doctorKnownLanguages = doctorLangs ? doctorLangs.split(',').map(lang => lang.trim()) : null;
+
+        const sessionData = {
+          type: 'start_session',
+          preferred_language: this.preferredLangSelect.value || null,
+          processing_mode: this.processingModeSelect.value,
+          code_switching_mode: this.codeSwitchingCheck.checked,
+          doctor_known_languages: doctorKnownLanguages,
+          doctor_profile: this.doctorProfileInput.value.trim() || null
+        };
+
+        this.log(`🚀 Starting session with config: ${JSON.stringify(sessionData, null, 2)}`, 'info');
+        this.ws.send(JSON.stringify(sessionData));
+      }
+
+      async startRecording() {
+        if (!this.sessionId) {
+          this.log('❌ No active session. Start a session first.', 'error');
+          return;
+        }
+
+        try {
+          this.audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              sampleRate: 16000,
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+
+          const audioContext = new AudioContext({ sampleRate: 16000 });
+          const source = audioContext.createMediaStreamSource(this.audioStream);
+          const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+          processor.onaudioprocess = (event) => {
+            const inputData = event.inputBuffer.getChannelData(0);
+            const pcmData = new Int16Array(inputData.length);
+
+            for (let i = 0; i < inputData.length; i++) {
+              pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+            }
+
+            const audioData = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+              this.ws.send(JSON.stringify({
+                type: 'audio_stream',
+                session_id: this.sessionId,
+                audio_data: audioData,
+                format: 'pcm16'
+              }));
+            }
+          };
+
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+
+          this.processor = processor;
+          this.audioContext = audioContext;
+          this.isRecording = true;
+
+          this.log('🎤 Recording started', 'success');
+          this.updateStatus('recording', 'Recording');
+          this.updateUI();
+
+        } catch (error) {
+          this.log(`❌ Failed to start recording: ${error.message}`, 'error');
+        }
+      }
+
+      stopRecording() {
+        if (this.audioStream) {
+          this.audioStream.getTracks().forEach(track => track.stop());
+          this.audioStream = null;
+        }
+
+        if (this.processor) {
+          this.processor.disconnect();
+          this.processor = null;
+        }
+
+        if (this.audioContext) {
+          this.audioContext.close();
+          this.audioContext = null;
+        }
+
+        this.isRecording = false;
+        this.log('⏹️ Recording stopped', 'info');
+        this.updateStatus('connected', 'Connected');
+        this.updateUI();
+      }
+
+      endSession() {
+        if (!this.sessionId) {
+          this.log('❌ No active session to end', 'error');
+          return;
+        }
+
+        this.stopRecording();
+
+        const endData = {
+          type: 'end_session',
+          session_id: this.sessionId,
+          ai_model: this.aiModelSelect.value
+        };
+
+        this.log(`🏁 Ending session: ${this.sessionId}`, 'info');
+        this.ws.send(JSON.stringify(endData));
+      }
+
+      handleMessage(data) {
+        switch (data.type) {
+          case 'session_started':
+            this.sessionId = data.session_id;
+            this.log(`✅ Session started: ${this.sessionId}`, 'success');
+            this.updateSessionInfo(`Session ID: ${this.sessionId}`);
+            this.updateUI();
+            break;
+
+          case 'transcription_update':
+            this.addTranscriptEntry(data);
+            this.log(`📝 Transcription [${data.language}]: ${data.transcript.substring(0, 50)}...`, 'info');
+            break;
+
+          case 'session_ended':
+            this.log('🏁 Session ended successfully', 'success');
+            this.log(`📊 Final Summary:\n${JSON.stringify(data.data, null, 2)}`, 'info');
+            this.sessionId = null;
+            this.updateSessionInfo('');
+            this.updateUI();
+            break;
+
+          case 'error':
+            this.log(`❌ Error: ${data.message}`, 'error');
+            break;
+
+          default:
+            this.log(`📨 Unknown message: ${JSON.stringify(data)}`, 'info');
+        }
+      }
+
+      addTranscriptEntry(data) {
+        const entry = document.createElement('div');
+        entry.className = 'transcript-entry';
+
+        const meta = document.createElement('div');
+        meta.className = 'transcript-meta';
+
+        let metaText = `${new Date().toLocaleTimeString()} | Language: ${data.language || 'unknown'}`;
+        if (data.speaker) metaText += ` | Speaker: ${data.speaker}`;
+        if (data.was_translated) metaText += ` | Translated`;
+        if (data.processing_mode) metaText += ` | Mode: ${data.processing_mode}`;
+
+        meta.textContent = metaText;
+
+        const text = document.createElement('div');
+        text.className = 'transcript-text';
+        text.textContent = data.transcript;
+
+        entry.appendChild(meta);
+        entry.appendChild(text);
+
+        // Show original if translated
+        if (data.was_translated && data.original_transcript) {
+          const original = document.createElement('div');
+          original.className = 'transcript-meta';
+          original.style.fontStyle = 'italic';
+          original.textContent = `Original [${data.original_language}]: ${data.original_transcript}`;
+          entry.appendChild(original);
+        }
+
+        // Clear placeholder text
+        if (
+          this.transcript.children.length === 1 &&
+          this.transcript.firstElementChild?.style?.textAlign === 'center'
+        ) {
+          this.transcript.innerHTML = '';
+        }
+
+        this.transcript.appendChild(entry);
+        this.transcript.scrollTop = this.transcript.scrollHeight;
+      }
+
+      updateStatus(status, text) {
+        this.statusDot.className = `status-dot ${status}`;
+        this.statusText.textContent = text;
+      }
+
+      updateSessionInfo(info) {
+        this.sessionInfo.textContent = info;
+      }
+
+      updateUI() {
+        this.connectBtn.disabled = this.isConnected;
+        this.disconnectBtn.disabled = !this.isConnected;
+        this.startSessionBtn.disabled = !this.isConnected || this.sessionId;
+        this.startRecordingBtn.disabled = !this.sessionId || this.isRecording;
+        this.stopRecordingBtn.disabled = !this.isRecording;
+        this.endSessionBtn.disabled = !this.sessionId;
+      }
+
+      log(message, type = 'info') {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+
+        this.logs.appendChild(entry);
+        this.logs.scrollTop = this.logs.scrollHeight;
+      }
+
+      clearTranscript() {
+        this.transcript.innerHTML = '<div style="text-align: center; color: #a0aec0; margin-top: 80px;">Transcript cleared. Start recording to see new transcriptions...</div>';
+      }
+
+      clearLogs() {
+        this.logs.innerHTML = '<div class="log-entry info">Logs cleared.</div>';
+      }
+    }
+
+    // Initialize the client when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new TranscriptionTestClient();
+    });
+  </script>
+</body>
+
+</html>
