@@ -1,0 +1,6 @@
+websockets
+aiofiles
+aiohttp
+sarvamai
+dotenv
+boto3
