@@ -1,128 +1,94 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
+import { LogOut, ChevronDown, Clock, Wifi } from 'lucide-react';
 
 const GlobalHeader = ({ user }) => {
   const [lastUpdated, setLastUpdated] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Update timestamp every 5 seconds
   useEffect(() => {
     const updateTime = () => setLastUpdated(new Date().toLocaleTimeString());
-    updateTime(); // set immediately
+    updateTime();
     const interval = setInterval(updateTime, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    window.location.href = '/api/auth/logout';
-  };
-
-  const getDisplayUsername = () => {
-    return (
-      user?.['cognito:username'] ||
-      user?.username ||
-      user?.name ||
-      user?.email ||
-      'User'
-    );
-  };
+  const getDisplayUsername = () =>
+    user?.['cognito:username'] || user?.username || user?.name || user?.email || 'User';
 
   const getAvatarInitial = () => getDisplayUsername().charAt(0).toUpperCase();
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200">
-      {/* Main Header */}
-      <div className="px-6 py-4 flex justify-between items-center">
-        {/* Left side - Logo */}
-        <div className="flex items-center space-x-3">
-          <img src="/rainbow-logo.svg" alt="Logo" className="w-35 h-20" />
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Rainbow</h1>
-            {/* <p className="text-sm text-gray-500">MedTranscribe</p> */}
+    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <div className="flex items-center gap-3 min-w-0">
+          <img src="/rainbow-logo.svg" alt="Rainbow Hospital" className="h-10 sm:h-12 w-auto flex-shrink-0" />
+          <div className="hidden sm:block min-w-0">
+            <h1 className="text-base font-semibold text-gray-900 leading-tight truncate">Rainbow Hospital</h1>
+            <p className="text-xs text-gray-500">AI Medical Assistant</p>
           </div>
         </div>
-{/* /Op.png  w-30 h-12*/}
-        {/* Right side - User Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-3 focus:outline-none"
-          >
-            {/* <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium text-gray-900">
-                {getDisplayUsername()}
-              </div>
-              <div className="text-xs text-gray-500">
-                {user?.email || 'No email'}
-              </div>
-            </div> */}
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-              {getAvatarInitial()}
-            </div>
-            <svg
-              className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-                isDropdownOpen ? 'rotate-180' : ''
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+
+        {/* Status + User */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Status pill — hidden on very small screens */}
+          <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              Online
+            </span>
+            <span className="text-gray-300">|</span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-gray-400" />
+              {lastUpdated || '--'}
+            </span>
+          </div>
+
+          {/* User dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">
-                  {getDisplayUsername()}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {user?.email || 'No email'}
-                </p>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
+                {getAvatarInitial()}
               </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-medium text-gray-800 leading-tight max-w-[120px] truncate">{getDisplayUsername()}</p>
+                <p className="text-xs text-gray-500 max-w-[120px] truncate">{user?.email || ''}</p>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-              {/* Logout button */}
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-medium transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Status Bar */}
-      <div className="bg-blue-50 border-t border-blue-100 px-6 py-3 text-sm flex justify-between">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">System Status: Online</span>
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{getDisplayUsername()}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email || 'No email'}</p>
+                </div>
+                <button
+                  onClick={() => { window.location.href = '/api/auth/logout'; }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
-          <div className="text-gray-500">Last updated: {lastUpdated || '--'}</div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 
