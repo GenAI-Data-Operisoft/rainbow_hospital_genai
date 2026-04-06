@@ -9,6 +9,7 @@ import TranscriptionPanel from './TranscriptionPanel';
 import DocumentationPanel from './DocumentationPanel';
 import CategoriesPanel from './CategoriesPanel';
 import EvaluationPanel from './EvaluationPanel';
+import GrowthChartModal from './GrowthChartModal';
 import { Loader2, Wifi, WifiOff, Radio, Mic, MicOff } from 'lucide-react';
 
 const MedicalTranscriptionSystem = ({ user }) => {
@@ -47,7 +48,16 @@ const MedicalTranscriptionSystem = ({ user }) => {
   // NEW: State for evaluation results
   const [evaluationResult, setEvaluationResult] = useState(null);
 
+  // NEW: State for growth data
+  const [growthData, setGrowthData] = useState(null);
+
   const [isCleared, setIsCleared] = useState(false);
+
+  // NEW: Track if component is mounted (client-side only)
+  const [isMounted, setIsMounted] = useState(false);
+
+  // NEW: State for growth chart modal
+  const [isGrowthChartModalOpen, setIsGrowthChartModalOpen] = useState(false);
 
   // Refs
   const wsRef = useRef(null);
@@ -71,6 +81,11 @@ const MedicalTranscriptionSystem = ({ user }) => {
       'UnknownUser'
     );
   };
+
+  // Set mounted flag on client-side only
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const scrollToEvaluation = () => {
     if (evaluationRef.current) {
@@ -154,9 +169,13 @@ const MedicalTranscriptionSystem = ({ user }) => {
       return;
     }
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8765';
+    // const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8765';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://rainbow.operisoft.com/ws/';
     console.log('Connecting to WebSocket:', wsUrl);
     setConnectionStatus('connecting');
+
+    console.log('WS URL from env:', process.env.NEXT_PUBLIC_WS_URL);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
 
     try {
       wsRef.current = new WebSocket(wsUrl);
@@ -296,6 +315,25 @@ const MedicalTranscriptionSystem = ({ user }) => {
           setIsFinalizing(false);
           setIsFinalized(true);
         }, 500);
+        break;
+
+      // 📊 Step 4: Growth data extracted (NEW)
+      case 'growth_data_extracted':
+        console.log('📊 Growth data received:', data.data);
+        
+        // Add timestamp to track when data was extracted
+        const growthDataWithTimestamp = {
+          ...data.data,
+          extractedAt: new Date().toISOString()
+        };
+        
+        setGrowthData(growthDataWithTimestamp);
+        
+        // Store in localStorage for growth chart page
+        if (data.data && data.data.age && (data.data.weight || data.data.height)) {
+          localStorage.setItem('growthData', JSON.stringify(growthDataWithTimestamp));
+          console.log('✅ Growth data stored in localStorage with timestamp');
+        }
         break;
 
       // 🧩 Legacy: Combined prescription (old backend support)
@@ -899,6 +937,8 @@ const MedicalTranscriptionSystem = ({ user }) => {
     setHighlightNotification(null);
     setEvaluationResult(null);
     setPatientDemographics({});
+    setGrowthData(null); // Clear growth data
+    localStorage.removeItem('growthData'); // Clear from localStorage
     setIsCleared(true);
     // ✅ Reset isCleared after cleanup to allow new sessions
     setTimeout(() => setIsCleared(false), 1500);
@@ -949,6 +989,8 @@ const MedicalTranscriptionSystem = ({ user }) => {
         isEndingSession={isEndingSession} // Pass the state
         transcript={transcript} // Pass transcript for unsaved changes check
         scrollToEvaluation={scrollToEvaluation}
+        growthData={growthData} // Pass growth data
+        onOpenGrowthChart={() => setIsGrowthChartModalOpen(true)} // NEW: Open modal callback
       />
 
       {/* NEW: VAD Status Indicator */}
@@ -1027,6 +1069,12 @@ const MedicalTranscriptionSystem = ({ user }) => {
         )}
       </div>
 
+      {/* Growth Chart Modal */}
+      <GrowthChartModal
+        isOpen={isGrowthChartModalOpen}
+        onClose={() => setIsGrowthChartModalOpen(false)}
+        growthData={growthData}
+      />
     </div>
   );
 };

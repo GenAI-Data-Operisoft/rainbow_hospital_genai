@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth Data Debugger</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+        .success { border-color: #4CAF50; background: #E8F5E9; }
+        .error { border-color: #f44336; background: #FFEBEE; }
+        .warning { border-color: #FF9800; background: #FFF3E0; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            font-size: 14px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Growth Data Debugger</h1>
+    
+    <div class="section">
+        <h2>Step 1: Check localStorage</h2>
+        <button onclick="checkLocalStorage()">Check localStorage</button>
+        <button onclick="clearLocalStorage()">Clear localStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Test Data</h2>
+        <button onclick="setTestData()">Set Test Growth Data</button>
+        <button onclick="openGrowthChart()">Open Growth Chart</button>
+        <div id="test-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Instructions</h2>
+        <ol>
+            <li>Click "Check localStorage" to see what's stored</li>
+            <li>If empty, click "Set Test Growth Data" to add sample data</li>
+            <li>Click "Open Growth Chart" to see if it loads</li>
+            <li>If it works, the issue is with the backend extraction</li>
+        </ol>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const data = localStorage.getItem('growthData');
+            const result = document.getElementById('localStorage-result');
+            
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    result.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Found Growth Data:</h3>
+                            <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                        </div>
+                    `;
+                } catch (e) {
+                    result.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Invalid JSON in localStorage:</h3>
+                            <pre>${data}</pre>
+                            <p>Error: ${e.message}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                result.innerHTML = `
+                    <div class="warning">
+                        <h3>⚠️ No Growth Data Found</h3>
+                        <p>localStorage is empty. This means:</p>
+                        <ul>
+                            <li>Backend didn't extract data, OR</li>
+                            <li>Frontend didn't receive WebSocket message, OR</li>
+                            <li>Data wasn't saved to localStorage</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('growthData');
+            alert('✅ Cleared growthData from localStorage');
+            checkLocalStorage();
+        }
+
+        function setTestData() {
+            const testData = {
+                name: "Test Child",
+                age: 24,
+                weight: 12.2,
+                height: 86.8,
+                gender: "boy",
+                confidence: 1.0
+            };
+            
+            localStorage.setItem('growthData', JSON.stringify(testData));
+            
+            const result = document.getElementById('test-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>✅ Test Data Set Successfully:</h3>
+                    <pre>${JSON.stringify(testData, null, 2)}</pre>
+                    <p>Now click "Open Growth Chart" to test if it loads correctly.</p>
+                </div>
+            `;
+        }
+
+        function openGrowthChart() {
+            window.open('/growth-chart', '_blank');
+        }
+
+        // Auto-check on load
+        window.onload = checkLocalStorage;
+    </script>
+</body>
+</html>

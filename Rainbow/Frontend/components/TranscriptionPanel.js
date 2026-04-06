@@ -242,7 +242,7 @@ const TranscriptionPanel = ({
   return (
     <div className="lg:col-span-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col">
       {/* HEADER */}
-      <div className="bg-gradient-to-r from-[#8E3B7A] to-[#EC2F8C] px-4 py-3">
+      <div className="bg-gradient-to-r from-[#E15CFF] to-[#8500A3] px-4 py-3">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <div className="w-6 h-6 bg-white/20 rounded flex items-center justify-center">

@@ -50,7 +50,7 @@ const GlobalHeader = ({ user }) => {
           <img src="/rainbow-logo.svg" alt="Logo" className="w-35 h-20" />
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Rainbow</h1>
-            <p className="text-sm text-gray-500">MedTranscribe</p>
+            {/* <p className="text-sm text-gray-500">MedTranscribe</p> */}
           </div>
         </div>
 {/* /Op.png  w-30 h-12*/}

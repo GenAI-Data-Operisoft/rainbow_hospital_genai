@@ -115,32 +115,44 @@ class PdfExportService {
     return patientInfo;
   }
 
-  addHeader(prescription, userInfo, metadata) {
+  async addHeader(prescription, userInfo, metadata) {
     // Extract patient info from prescription's Patient Demographics section
     const patientInfo = this.extractPatientDemographics(prescription);
 
     this.doc.setFillColor(142, 59, 122);
-    this.doc.rect(0, 0, this.doc.internal.pageSize.width, 25, 'F');
+    this.doc.rect(0, 0, this.doc.internal.pageSize.width, 35, 'F');
 
     // Add logo
+    const logoW = 55;
+    const logoH = 28;
+    const logoX = this.margin;
+    const logoY = 3.5;
     try {
-      const logoPath = 'rainbow/Rainbow Hospital/Frontend/public/rainbow-logo.svg';
-      this.doc.addImage(logoPath, 'SVG', this.margin, 5, 15, 15);
+      const response = await fetch('/rainbow-logo.png');
+      const blob = await response.blob();
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      this.doc.addImage(dataUrl, 'PNG', logoX, logoY, logoW, logoH);
     } catch (error) {
       console.warn('Could not load logo:', error);
     }
 
+    const textX = logoX + logoW + 5;
+
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(16);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Rainbow Hospital', this.margin + 18, 12);
+    this.doc.text('Rainbow Hospital', textX, 14);
 
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('PLOT NO.- 88,17, Phase 2, Sector 19D, Vashi, Navi Mumbai', this.margin, 18);
-    this.doc.text('Phone: +91 99728 99728', this.margin, 23);
+    this.doc.text('FC-29, Plot No.5, Geetanjali, Near Malviya Nagar Metro Station Gate No.1, Delhi', textX, 22);
+    this.doc.text('Phone: +91 8037836526', textX, 29);
 
-    this.currentY = 35;
+    this.currentY = 45;
 
     this.doc.setFillColor(240, 240, 240);
     this.doc.rect(
@@ -195,20 +207,32 @@ class PdfExportService {
     let currentSection = null;
     let currentContent = [];
 
+    // Match the exact categories the AI prompt outputs
     const categories = [
       'Patient Demographics',
-      'Symptoms',
-      'Physical Examination',
-      'Assessment',
-      'Plan of Action',
-      'Medicine',
-      'Lab',
-      'Scan',
-      'Instructions',
-      'Next Steps',
+      'Chief Complaints',
+      'Present Illness',
+      'Past Medical/Surgical History',
+      'Family History',
+      'Personal/Social History',
+      'Developmental History',
+      'Examination',
+      'Diagnosis',
+      'Procedure',
+      'OB History',
+      'Doctor Note',
+      'Doctor Recommendation and Advice',
     ];
 
+    const isMedicalDocHeader = (str) => {
+      const cleaned = str.toLowerCase().replace(/[*•\-:\s]/g, '');
+      return cleaned === 'medicaldocumentation';
+    };
+
     for (const line of lines) {
+      // Skip the "Medical Documentation:" header line itself
+      if (isMedicalDocHeader(line)) continue;
+
       const category = categories.find(
         (cat) =>
           line.toLowerCase().includes(cat.toLowerCase() + ':') ||
@@ -220,48 +244,42 @@ class PdfExportService {
           sections.push({ category: currentSection, content: currentContent });
         }
         currentSection = category;
+        // Strip markdown, bullets, and the category label to get inline content
         const headerContent = line
-          .replace(/[*•\-]/g, '')
-          .replace(category + ':', '')
+          .replace(/\*\*/g, '')
+          .replace(/^[-•]\s*/, '')
+          .replace(new RegExp(category + ':\\s*', 'i'), '')
           .trim();
-        if (headerContent) {
-          currentContent = headerContent
-            .split(',')
-            .map((item) => item.trim())
-            .filter((item) => item && item.toLowerCase() !== 'medical documentation');
-        } else {
-          currentContent = [];
-        }
+        currentContent = headerContent && !isMedicalDocHeader(headerContent)
+          ? [headerContent]
+          : [];
       } else if (currentSection) {
         const trimmedLine = line.trim();
-        if (
-          trimmedLine &&
-          trimmedLine.toLowerCase() !== 'medical documentation:' &&
-          trimmedLine.toLowerCase() !== 'medical documentation'
-        ) {
-          const items = trimmedLine
-            .split(',')
-            .map((item) => item.trim())
-            .filter((item) => item && item.toLowerCase() !== 'medical documentation');
-          currentContent.push(...items);
+        if (trimmedLine && !isMedicalDocHeader(trimmedLine)) {
+          const cleanLine = trimmedLine.replace(/^[-•]\s*/, '').trim();
+          if (cleanLine) currentContent.push(cleanLine);
         }
       }
     }
 
     if (currentSection) sections.push({ category: currentSection, content: currentContent });
 
-    // Filter out Patient Demographics and Plan of Action sections
-    return sections.filter(section => 
-      section.category !== 'Patient Demographics' && 
-      section.category !== 'Plan of Action'
-    );
+    // Exclude Patient Demographics (shown in header) and skip sections with no real content
+    return sections.filter(section => {
+      if (section.category === 'Patient Demographics') return false;
+      const realContent = section.content.filter(
+        item => item.trim() && item.trim().toLowerCase() !== 'none'
+      );
+      return realContent.length > 0;
+    });
   }
 
   addPrescriptionContent(prescription) {
     const sections = this.parsePrescriptionSections(prescription);
 
     this.checkPageBreak(15);
-    this.doc.setFillColor(236, 47, 140);
+    // Changed from pink (236, 47, 140) to purple #AB00D1 (171, 0, 209)
+    this.doc.setFillColor(171, 0, 209);
     this.doc.rect(
       this.margin,
       this.currentY,
@@ -280,7 +298,8 @@ class PdfExportService {
     sections.forEach((section) => {
       this.checkPageBreak(20);
 
-      this.doc.setTextColor(142, 59, 122);
+      // Changed from pink (142, 59, 122) to purple #AB00D1 (171, 0, 209)
+      this.doc.setTextColor(171, 0, 209);
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(section.category.toUpperCase(), this.margin, this.currentY);
@@ -292,7 +311,7 @@ class PdfExportService {
       this.doc.setFont('helvetica', 'normal');
 
       const filteredContent = section.content.filter(
-        (item) => item.toLowerCase() !== 'medical documentation'
+        (item) => item.trim() && item.toLowerCase() !== 'medical documentation' && item.trim().toLowerCase() !== 'none'
       );
 
       if (filteredContent.length === 0) {
@@ -396,7 +415,7 @@ class PdfExportService {
   }) {
     try {
       this.initPDF();
-      this.addHeader(prescription, user, metadata);
+      await this.addHeader(prescription, user, metadata);
       this.addPrescriptionContent(prescription);
 
       if (diarizationResults) {

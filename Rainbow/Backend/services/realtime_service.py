@@ -18,6 +18,7 @@ from services.vad_service import VADService
 from services.diarization_service import DiarizationService
 from services.aws_bedrock_service import AWSBedrockService
 from services.s3_storage_service import S3StorageService
+from services.growth_data_extraction_service import GrowthDataExtractionService
 from utils.audio_utils import create_wav_buffer
 from utils.language_utils import LanguageUtils
 from utils.speaker_utils import identify_speaker
@@ -30,6 +31,7 @@ class RealTimeTranscriptionService:
         self.diarization_service = DiarizationService()
         self.aws_bedrock_service = AWSBedrockService()
         self.s3_storage_service = S3StorageService()
+        self.growth_extraction_service = GrowthDataExtractionService()
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
         self.script_patterns = LanguageUtils.script_patterns
 
@@ -997,6 +999,47 @@ class RealTimeTranscriptionService:
 
         print(f'✅ All 3 steps completed and sent to frontend progressively')
         
+        # ============================================================================
+        # STEP 4: EXTRACT GROWTH DATA (NEW)
+        # ============================================================================
+        growth_data = None
+        try:
+            print(f'📊 [STEP 4/4] Starting growth data extraction...')
+            
+            growth_data = await self.growth_extraction_service.extract_growth_data(
+                transcript=session.get('transcript_buffer', ''),
+                context=context
+            )
+            
+            # Send growth data to frontend if we have meaningful data
+            if growth_data and growth_data.get('age') and (growth_data.get('weight') or growth_data.get('height')):
+                await websocket.send(json.dumps({
+                    'type': 'growth_data_extracted',
+                    'session_id': session_id,
+                    'data': growth_data
+                }))
+                
+                # Store in session for later use
+                session['growth_data'] = growth_data
+                
+                print(f'✅ [STEP 4/4] Growth data extracted and sent to frontend')
+                print(f'   - Name: {growth_data.get("name")}')
+                print(f'   - Age: {growth_data.get("age")} months')
+                print(f'   - Weight: {growth_data.get("weight")} kg')
+                print(f'   - Height: {growth_data.get("height")} cm')
+                print(f'   - Gender: {growth_data.get("gender")}')
+                print(f'   - Confidence: {growth_data.get("confidence")}')
+            else:
+                print(f'ℹ️ [STEP 4/4] No sufficient growth data found in transcript')
+                
+        except Exception as e:
+            print(f'❌ [STEP 4/4] Growth data extraction failed: {e}')
+            import traceback
+            traceback.print_exc()
+            # Don't fail the whole process, just log the error
+
+        print(f'✅ All 4 steps completed (including growth data extraction)')
+        
         # Return combined payload for legacy compatibility (if needed for S3 storage)
         return {
             "medical_summary": final_summary,
@@ -1006,6 +1049,7 @@ class RealTimeTranscriptionService:
             "categories_stats": categories_stats,
             "context": context,
             "ai_model": self.aws_bedrock_service.model_name,
+            "growth_data": growth_data,
             "evaluation_result": evaluation_result
         }
 

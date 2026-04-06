@@ -34,15 +34,19 @@ Patient Demographics:
 - Gender: <Extract if mentioned, else "None">
 
 Medical Documentation:
-- **Symptoms**: List all patient-reported complaints. If none mentioned, write "None".
-- **Physical Examination**: List findings and vitals (include `{vitals_text}` if provided). If none, write "None".
-- **Assessment**: Write exactly what doctor said for diagnosis or provisional assessment. If none, write "None".
-- **Plan of Action**:
-  - **Medicine:** Mention only what doctor specified, else "None".
-  - **Lab:** Mention only what doctor specified, else "None".
-  - **Scan:** Mention only what doctor specified, else "None".
-  - **Instructions:** Mention only what doctor specified, else "None".
-  - **Next Steps:** Mention only what doctor specified, else "None".
+
+- **Chief Complaints**: List main patient-reported complaints. If none mentioned, write "None".
+- **Present Illness**: Summarize details of the current illness (onset, duration, progression). If none mentioned, write "None".
+- **Past Medical/Surgical History**: List previous diseases, conditions, or surgeries. If none mentioned, write "None".
+- **Family History**: Mention relevant medical history in family members. If none mentioned, write "None".
+- **Personal/Social History**: Mention lifestyle details (smoking, alcohol, occupation, etc.). If none mentioned, write "None".
+- **Developmental History**: Mention developmental milestones if applicable. If none mentioned, write "None".
+- **Examination**: List clinical findings and vitals (include {vitals_text} if provided). If none mentioned, write "None".
+- **Diagnosis**: Write exactly the diagnosis stated by the doctor. If none mentioned, write "None".
+- **Procedure**: Mention any procedure performed or planned. If none mentioned, write "None".
+- **OB History**: Mention obstetric history details if provided. If none mentioned, write "None".
+- **Doctor Note**: Extract additional doctor remarks or notes. If none mentioned, write "None".
+- **Doctor Recommendation and Advice**: Mention doctor's recommendations, medicines, tests, or follow-up advice. If none mentioned, write "None".
 
 ### CONTEXT:
 - Clinical Category: {context}

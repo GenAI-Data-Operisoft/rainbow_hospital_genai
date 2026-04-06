@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Mic, Square, Upload, Trash2, Wifi, WifiOff, Radio, Loader2, AlertCircle, ScrollText
+  Mic, Square, Upload, Trash2, Wifi, WifiOff, Radio, Loader2, AlertCircle, ScrollText, BarChart3
 } from 'lucide-react';
 
 const ControlsPanel = ({
@@ -20,7 +20,9 @@ const ControlsPanel = ({
   speechInProgress,
   isEndingSession,
   transcript,
-  scrollToEvaluation
+  scrollToEvaluation,
+  growthData,
+  onOpenGrowthChart // NEW: callback to open modal
 }) => {
   const [localEndingSession, setLocalEndingSession] = useState(false);
   const [waitingForSessionEnd, setWaitingForSessionEnd] = useState(false);
@@ -185,6 +187,27 @@ const ControlsPanel = ({
               </span>
             </div>
           </div>
+
+          {/* Graph Button */}
+          <button
+            onClick={() => { 
+              console.log('📊 Opening growth chart modal with data:', growthData);
+              if (onOpenGrowthChart) {
+                onOpenGrowthChart();
+              }
+              resetInactivityTimer(); 
+            }}
+            disabled={!growthData}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              growthData
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={growthData ? 'View WHO Growth Charts' : 'Generate prescription first to extract growth data'}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Graph {growthData && '✓'}
+          </button>
 
           {/* Go to Evaluation Button */}
           <button

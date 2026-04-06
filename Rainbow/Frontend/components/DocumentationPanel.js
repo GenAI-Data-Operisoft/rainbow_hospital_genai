@@ -32,6 +32,8 @@ const DocumentationPanel = ({
   const [isZoomed, setIsZoomed] = useState(false);
   const [editingSections, setEditingSections] = useState({});
   const [isExporting, setIsExporting] = useState(false);
+  const [editableSections, setEditableSections] = useState(null);
+  const prevPrescriptionRef = useRef(null);
 
   const summaryRef = useRef(null);
 
@@ -50,7 +52,7 @@ const DocumentationPanel = ({
         patientDemographics: patientDemographics || {},
         user: user || {},
         metadata: {
-          model: metadata?.model || 'Nova-Lite',
+          model: metadata?.ai_model || metadata?.model || 'Nova-Lite',
           context: metadata?.context || 'Generic',
           ...metadata
         },
@@ -81,16 +83,20 @@ const DocumentationPanel = ({
   const getCategoryIcon = (category) => {
     const icons = {
       'Patient Demographics': '',
-      'Symptoms': '',
-      'Physical Examination': '',
-      'Assessment': '',
-      'Plan of Action': '',
-      'Medicine': '',
-      'Lab': '',
-      'Scan': '',
-      'Instructions': '',
-      'Next Steps': '',
-    };
+      'Chief Complaints': '',
+      'Present Illness': '',
+      'Past Medical/Surgical History': '',
+      'Family History': '',
+      'Personal/Social History': '',
+      'Developmental History': '',
+      'Examination': '',
+      'Diagnosis': '',
+      'Procedure': '',
+      'OB History': '',
+      'Doctor Note': '',
+      'Doctor Recommendation and Advice': '',
+  };
+
     return icons[category] || '';
   };
 
@@ -104,24 +110,29 @@ const DocumentationPanel = ({
 
     const categories = [
       'Patient Demographics',
-      'Symptoms',
-      'Physical Examination',
-      'Assessment',
-      'Plan of Action',
-      'Medicine',
-      'Lab',
-      'Scan',
-      'Instructions',
-      'Next Steps',
+      'Chief Complaints',
+      'Present Illness',
+      'Past Medical/Surgical History',
+      'Family History',
+      'Personal/Social History',
+      'Developmental History',
+      'Examination',
+      'Diagnosis',
+      'Procedure',
+      'OB History',
+      'Doctor Note',
+      'Doctor Recommendation and Advice'
     ];
 
-    // Helper function to check if text contains "Medical Documentation"
-    const isMedicalDocumentation = (str) => {
+    const isMedicalDocHeader = (str) => {
       const cleaned = str.toLowerCase().replace(/[*•\-:\s]/g, '');
-      return cleaned === 'medicaldocumentation' || cleaned.includes('medicaldocumentation');
+      return cleaned === 'medicaldocumentation';
     };
 
     for (const line of lines) {
+      // Skip the "Medical Documentation:" divider line
+      if (isMedicalDocHeader(line)) continue;
+
       const category = categories.find(cat =>
         line.toLowerCase().includes(cat.toLowerCase() + ':') ||
         line.toLowerCase().includes('**' + cat.toLowerCase() + '**')
@@ -132,17 +143,20 @@ const DocumentationPanel = ({
           sections.push({ category: currentSection, content: currentContent });
         }
         currentSection = category;
-        const headerContent = line.replace(/[*•\-]/g, '').replace(category + ':', '').trim();
-        if (headerContent && !isMedicalDocumentation(headerContent)) {
-          currentContent = headerContent.split(',').map(item => item.trim()).filter(item => item && !isMedicalDocumentation(item));
-        } else {
-          currentContent = [];
-        }
+        // Strip markdown bold markers, leading bullets, and the category label
+        const headerContent = line
+          .replace(/\*\*/g, '')
+          .replace(/^[-•]\s*/, '')
+          .replace(new RegExp(category + ':\\s*', 'i'), '')
+          .trim();
+        currentContent = headerContent && !isMedicalDocHeader(headerContent)
+          ? [headerContent]
+          : [];
       } else if (currentSection) {
         const trimmedLine = line.trim();
-        if (trimmedLine && !isMedicalDocumentation(trimmedLine)) {
-          const items = trimmedLine.split(',').map(item => item.trim()).filter(item => item && !isMedicalDocumentation(item));
-          currentContent.push(...items);
+        if (trimmedLine && !isMedicalDocHeader(trimmedLine)) {
+          const cleanLine = trimmedLine.replace(/^[-•]\s*/, '').trim();
+          if (cleanLine) currentContent.push(cleanLine);
         }
       }
     }
@@ -269,56 +283,72 @@ const DocumentationPanel = ({
   };
 
   const handleSectionContentChange = (sectionIndex, itemIndex, newValue) => {
-    const sections = parseDocumentation(prescription);
-    sections[sectionIndex].content[itemIndex] = newValue;
+    const sections = editableSections || parseDocumentation(prescription);
+    const updated = sections.map((s, si) =>
+      si === sectionIndex
+        ? { ...s, content: s.content.map((c, ci) => ci === itemIndex ? newValue : c) }
+        : s
+    );
+    setEditableSections(updated);
 
-    const updatedPrescription = sections
+    const updatedPrescription = updated
       .map(section => {
         const header = `**${section.category}:**`;
         const items = section.content
-          .filter(item => item.trim())
+          .filter(item => item !== '')
           .map(item => (item.startsWith('-') ? item : `- ${item}`))
           .join('\n');
         return `${header}\n${items}`;
       })
       .join('\n\n');
 
+    prevPrescriptionRef.current = updatedPrescription;
     setPrescription(updatedPrescription);
   };
 
   const handleAddLine = (sectionIndex) => {
-    const sections = parseDocumentation(prescription);
-    sections[sectionIndex].content.push('');
+    const sections = editableSections || parseDocumentation(prescription);
+    const updated = sections.map((s, si) =>
+      si === sectionIndex ? { ...s, content: [...s.content, ''] } : s
+    );
+    setEditableSections(updated);
 
-    const updatedPrescription = sections
-      .map((section, idx) => {
+    const updatedPrescription = updated
+      .map(section => {
         const header = `**${section.category}:**`;
         const items = section.content
-          .filter(item => item.trim() || idx === sectionIndex)
+          .filter(item => item !== '')
           .map(item => (item.startsWith('-') ? item : `- ${item}`))
           .join('\n');
         return `${header}\n${items}`;
       })
       .join('\n\n');
 
+    prevPrescriptionRef.current = updatedPrescription;
     setPrescription(updatedPrescription);
   };
 
   const handleDeleteLine = (sectionIndex, itemIndex) => {
-    const sections = parseDocumentation(prescription);
-    sections[sectionIndex].content.splice(itemIndex, 1);
+    const sections = editableSections || parseDocumentation(prescription);
+    const updated = sections.map((s, si) =>
+      si === sectionIndex
+        ? { ...s, content: s.content.filter((_, ci) => ci !== itemIndex) }
+        : s
+    );
+    setEditableSections(updated);
 
-    const updatedPrescription = sections
+    const updatedPrescription = updated
       .map(section => {
         const header = `**${section.category}:**`;
         const items = section.content
-          .filter(item => item.trim())
+          .filter(item => item !== '')
           .map(item => (item.startsWith('-') ? item : `- ${item}`))
           .join('\n');
         return `${header}\n${items}`;
       })
       .join('\n\n');
 
+    prevPrescriptionRef.current = updatedPrescription;
     setPrescription(updatedPrescription);
   };
 
@@ -332,7 +362,13 @@ const DocumentationPanel = ({
   const renderDocumentation = (text) => {
     if (!text) return null;
 
-    const sections = parseDocumentation(text);
+    // If prescription changed externally (e.g. Generate), reset editable sections
+    if (prevPrescriptionRef.current !== text) {
+      prevPrescriptionRef.current = text;
+      setEditableSections(null);
+    }
+
+    const sections = editableSections || parseDocumentation(text);
     const patientDemoIndex = sections.findIndex(s => s.category === 'Patient Demographics');
     const showMedicalDocHeader = patientDemoIndex >= 0 && sections.length > patientDemoIndex + 1;
 
@@ -393,7 +429,7 @@ const DocumentationPanel = ({
                   {filteredContent.map((line, i) => {
                     if (!isEditingPrescription && !line.trim()) return null;
 
-                    const cleanLine = line.replace(/^[-•]\s*/, '').trim();
+                    const cleanLine = line.replace(/^[-•]\s*/, '');
 
                     return (
                       <div key={i}>
@@ -474,7 +510,7 @@ const DocumentationPanel = ({
         )}
 
         {/* HEADER */}
-        <div className="bg-gradient-to-r from-[#8E3B7A] to-[#EC2F8C] px-4 py-3 relative">
+        <div className="bg-gradient-to-r from-[#03443F] to-[#27F5E4] px-4 py-3 relative">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <div className="w-6 h-6 bg-white/20 rounded flex items-center justify-center">
               <FileText className="h-4 w-4 text-white" />
@@ -503,7 +539,7 @@ const DocumentationPanel = ({
               onClick={generatePrescription}
               disabled={isGenerating}
               className="flex items-center gap-1 px-3 py-1 text-sm 
-                bg-gradient-to-r from-[#8E3B7A] to-[#EC2F8C] 
+                bg-gradient-to-r from-[#E15CFF] to-[#EC2F8C] 
                 hover:from-[#7A2D68] hover:to-[#D22078] 
                 text-white rounded-xl transition-colors disabled:opacity-50"
             >
@@ -514,7 +550,7 @@ const DocumentationPanel = ({
             <button
               onClick={handleFinalize}
               disabled={!prescription || isFinalizing}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-green-700 hover:bg-green-700 text-white rounded-xl transition-colors disabled:opacity-50"
             >
               <CheckCircle className="h-3 w-3" />
               {isFinalizing ? 'Finalizing...' : 'Finalize'}

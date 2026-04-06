@@ -124,6 +124,12 @@ class AWSBedrockService:
             print(f"❌ Error invoking model: {e}")
             return {"output": f"Error generating summary: {e}", "stats": None}
 
+    async def invoke_model_async(self, prompt: str) -> Dict:
+        """Async version of invoke_model for use in async contexts"""
+        import asyncio
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.invoke_model, prompt)
+
     async def generate_medical_categories(self, session: Dict, context: str = "Generic", summary: str = "") -> Dict:
         transcript = session.get("transcript_buffer", "").strip()
         summary = summary.strip()

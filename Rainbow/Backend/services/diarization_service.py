@@ -21,8 +21,8 @@ class DiarizationService:
         self.client = AsyncSarvamAI(api_subscription_key=self.api_key)
         
         # Output directories
-        self.recordings_dir = Path("/home/ubuntu/Rainbow/Rainbow/Backend/diarization_output/Conversation_Recordings")
-        self.transcripts_dir = Path("/home/ubuntu/Rainbow/Rainbow/Backend/diarization_output/diarization_Transcription")
+        self.recordings_dir = Path("/home/ubuntu/rainbow_hospital_genai/Rainbow/Backend/diarization_output/Conversation_Recordings")
+        self.transcripts_dir = Path("/home/ubuntu/rainbow_hospital_genai/Rainbow/Backend/diarization_output/diarization_Transcription")
         
         # Create directories if they don't exist
         self.recordings_dir.mkdir(parents=True, exist_ok=True)

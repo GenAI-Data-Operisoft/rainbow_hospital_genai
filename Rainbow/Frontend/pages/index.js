@@ -27,12 +27,24 @@ export default function Home({ isAuthenticated, user }) {
           <p className="text-gray-600 mb-8">
             Please log in to access the medical transcription system.
           </p>
-          <a
-            href="/api/auth/login"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
-          >
-            Login
-          </a>
+          <div className="space-y-4">
+            <div>
+              <a
+                href="/api/auth/login"
+                className="inline-block bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                Login
+              </a>
+            </div>
+            <div>
+              <a
+                href="/growth-chart"
+                className="inline-block bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                View WHO Growth Chart
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -42,6 +54,8 @@ export default function Home({ isAuthenticated, user }) {
     <>
       <Head>
         <title>Rainbow MedTranscribe</title>
+        {/* <title>MedTranscribe</title> */}
+
         <meta
           name="description"
           content="AI-powered medical transcription and documentation"

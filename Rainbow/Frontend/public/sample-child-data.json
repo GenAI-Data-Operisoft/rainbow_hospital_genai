@@ -1,0 +1,9 @@
+{
+  "name": "Sample Child",
+  "age": 24,
+  "weight": 12.5,
+  "height": 86.8,
+  "gender": "boy",
+  "dateOfBirth": "2024-02-11",
+  "notes": "Regular checkup - both weight and height available"
+}
