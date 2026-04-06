@@ -25,6 +25,7 @@ recommend labs, medicines, or scans on your own.**
 - If information is not present, leave the field as "None" (do not guess or fill in).
 - Do not expand, explain, or suggest additional steps.
 - Maintain professional medical language for EMR use.
+- PRIMARY PATIENT ONLY: The consultation is for one primary patient. If the conversation incidentally mentions another person (e.g., a sibling, second child, or other family member) with their own symptoms, complaints, or conditions, ignore that person entirely. Do NOT document their complaints, findings, diagnosis, or any doctor advice/recommendations given for them. Only extract information that directly relates to the primary patient being consulted. Do NOT add any note, comment, or explanation about what was skipped or ignored — just silently omit it.
 
 ### OUTPUT STRUCTURE (MUST FOLLOW EXACTLY):
 
@@ -45,8 +46,8 @@ Medical Documentation:
 - **Diagnosis**: Write exactly the diagnosis stated by the doctor. If none mentioned, write "None".
 - **Procedure**: Mention any procedure performed or planned. If none mentioned, write "None".
 - **OB History**: Mention obstetric history details if provided. If none mentioned, write "None".
-- **Doctor Note**: Extract additional doctor remarks or notes. If none mentioned, write "None".
-- **Doctor Recommendation and Advice**: Mention doctor's recommendations, medicines, tests, or follow-up advice. If none mentioned, write "None".
+- **Doctor Note**: Extract general doctor observations, remarks, or non-prescriptive comments (e.g., "patient seems anxious", "review in 2 weeks", "condition is improving"). Do NOT include medicines, dosages, or treatment instructions here. If none mentioned, write "None".
+- **Doctor Recommendation and Advice**: Extract ONLY medicines, dosages, syrups, tablets, injections, treatment instructions, tests ordered, lifestyle advice, and follow-up instructions that are prescribed or instructed BY THE DOCTOR in this consultation. This includes informal phrasing like "take this syrup", "one cup syrup", "I am giving you this medicine", "continue this tablet", "get this test done". Do NOT include medicines or treatments that the patient mentions they are already currently taking or using on their own — those belong in Past Medical/Surgical History. If none mentioned, write "None".
 
 ### CONTEXT:
 - Clinical Category: {context}
