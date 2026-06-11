@@ -22,11 +22,44 @@ const ControlsPanel = ({
   transcript,
   scrollToEvaluation,
   growthData,
-  onOpenGrowthChart
+  onOpenGrowthChart,
+  onPatientDataFetched
 }) => {
   const [localEndingSession, setLocalEndingSession] = useState(false);
   const [waitingForSessionEnd, setWaitingForSessionEnd] = useState(false);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [mrnInput, setMrnInput] = useState('');
+  const [mrnLoading, setMrnLoading] = useState(false);
+  const [mrnStatus, setMrnStatus] = useState(null); // 'success' | 'error' | null
+
+  const handleMrnFetch = async () => {
+    if (!mrnInput.trim()) return;
+    setMrnLoading(true);
+    setMrnStatus(null);
+    try {
+      const res = await fetch('/api/patient-visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mrn: mrnInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        setMrnStatus('success');
+        if (onPatientDataFetched) onPatientDataFetched(data);
+      } else {
+        setMrnStatus('error');
+      }
+    } catch (e) {
+      console.error('MRN fetch error:', e);
+      setMrnStatus('error');
+    } finally {
+      setMrnLoading(false);
+    }
+  };
+
+  const handleMrnKeyDown = (e) => {
+    if (e.key === 'Enter') handleMrnFetch();
+  };
 
   const inactivityTimer = useRef(null);
   const lastActivityTime = useRef(Date.now());
@@ -158,6 +191,31 @@ const ControlsPanel = ({
             <ScrollText className="h-4 w-4" />
             <span className="hidden sm:inline">Evaluation</span>
           </button>
+
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-6 bg-gray-200" />
+
+          {/* MRN Input */}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={mrnInput}
+              onChange={(e) => { setMrnInput(e.target.value); setMrnStatus(null); }}
+              onKeyDown={handleMrnKeyDown}
+              placeholder="Enter MRN"
+              disabled={mrnLoading}
+              className={`w-36 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent disabled:opacity-50 ${
+                mrnStatus === 'success' ? 'border-green-400 bg-green-50' : mrnStatus === 'error' ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
+              }`}
+            />
+            <button
+              onClick={handleMrnFetch}
+              disabled={mrnLoading || !mrnInput.trim()}
+              className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mrnLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Fetch'}
+            </button>
+          </div>
         </div>
 
         {/* Session note */}

@@ -70,6 +70,7 @@ const MedicalTranscriptionSystem = ({ user }) => {
   const sessionIdRef = useRef(null);
   const maxReconnectAttempts = 5;
   const evaluationRef = useRef(null);
+  const patientDemographicsRef = useRef({});
 
 
   const getDisplayUsername = () => {
@@ -92,6 +93,51 @@ const MedicalTranscriptionSystem = ({ user }) => {
       evaluationRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Handle patient data fetched via MRN
+  const handlePatientDataFetched = useCallback((data) => {
+    console.log('✅ Patient data fetched via MRN:', JSON.stringify(data));
+    const demographics = {
+      name: data.PatientName || '',
+      age: data.age || '',
+      gender: data.Gender || '',
+      dob: data.DateOfBirth || '',
+      mobile: data.MobileNo || '',
+      email: data.Email || '',
+      mrn: data.mrn || data.PatientID || '',
+      visitId: data.VisitID || '',
+      department: data.Department || '',
+      consultant: data.ConsultantName || '',
+      encounterType: data.EncounterType || '',
+    };
+    setPatientDemographics(demographics);
+    patientDemographicsRef.current = demographics;
+
+    // Update the prescription text to fill Patient Demographics section
+    const demoText = `**Patient Demographics:**\n- Name: ${demographics.name || 'None'}\n- Age: ${demographics.age || 'None'}\n- Gender: ${demographics.gender || 'None'}`;
+
+    setPrescription((prev) => {
+      if (!prev) return demoText;
+      const regex = /\*\*Patient Demographics:\*\*[\s\S]*?(?=\n\*\*|$)/;
+      if (regex.test(prev)) {
+        return prev.replace(regex, demoText);
+      }
+      return demoText + '\n\n' + prev;
+    });
+  }, []);
+
+  // Helper: inject MRN demographics into prescription text (uses ref for fresh value)
+  const injectMrnDemographics = useCallback((prescriptionText) => {
+    const demo = patientDemographicsRef.current;
+    if (!demo || !demo.name) return prescriptionText;
+    const demoText = `**Patient Demographics:**\n- Name: ${demo.name}\n- Age: ${demo.age || 'None'}\n- Gender: ${demo.gender || 'None'}`;
+    // Match "Patient Demographics:" section (with or without ** bold) until next section header
+    const regex = /\*{0,2}Patient Demographics:?\*{0,2}\n[\s\S]*?(?=\nMedical Documentation|\n-\s*\*\*|\n\*\*[A-Z]|$)/i;
+    if (regex.test(prescriptionText)) {
+      return prescriptionText.replace(regex, demoText + '\n');
+    }
+    return demoText + '\n\n' + prescriptionText;
+  }, []);
 
   // NEW: Function to handle transcript highlighting from category clicks
   const handleHighlightTranscript = useCallback((startIndex, endIndex, segment, notificationMessage = null) => {
@@ -281,7 +327,7 @@ const MedicalTranscriptionSystem = ({ user }) => {
       case 'summary_generated':
         console.log('🧠 Summary received:', data.data);
         setIsGenerating(true);
-        setPrescription(data.data.medical_summary);
+        setPrescription(injectMrnDemographics(data.data.medical_summary));
         setMetadata({
           summary_stats: data.data.summary_stats,
           context: data.data.context,
@@ -343,7 +389,7 @@ const MedicalTranscriptionSystem = ({ user }) => {
         setIsAnalyzing(false);
 
         if (data.data.medical_summary) {
-          setPrescription(data.data.medical_summary);
+          setPrescription(injectMrnDemographics(data.data.medical_summary));
           setMetadata({
             summary_stats: data.data.summary_stats,
             categories_stats: data.data.categories_stats,
@@ -991,6 +1037,7 @@ const MedicalTranscriptionSystem = ({ user }) => {
         scrollToEvaluation={scrollToEvaluation}
         growthData={growthData} // Pass growth data
         onOpenGrowthChart={() => setIsGrowthChartModalOpen(true)} // NEW: Open modal callback
+        onPatientDataFetched={handlePatientDataFetched}
       />
 
       {/* NEW: VAD Status Indicator */}
